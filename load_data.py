@@ -3,18 +3,20 @@
 # so using standard lib csv to parse
 # update1: tried csv and found a null char.
 #   will return back to original attempt.
+import json
+
 from pymongo import MongoClient
 
 
-def get_data_from_line(str_line):
+def get_data_from_line(str_line, len_fieldnames):
+
     # Based on given structure, description can throw off read
     #   so will grab the first elem, and the last few elem.
     #   Then assume whatever is left is the desc and rejoin it all
-    lst_dataline = str_line.split(",")
+    lst_dataline = str_line.rstrip().split(",")
     data_list = []
-
     data_list.append(lst_dataline.pop(0))
-    int_num_of_cols_look = len(fieldnames) - 2
+    int_num_of_cols_look = len_fieldnames - 1
 
     list_data_hold = []
     for x in range(int_num_of_cols_look):
@@ -43,54 +45,44 @@ if __name__ == "__main__":
 
     error_rows = []
     data_file = "AB_NYC_2019.csv"
-    limit = 200
 
     fileread_csv = open(data_file, "r", newline='')
-    fieldnames = None
+    header_row = None
+    expected_commas = 0
+    len_col = 0
 
-    list_fulldata = []
+    list_fulldata = {}
+    error_list = {}
 
-    for raw_str_line in fileread_csv:
-        # print(str_line)
-        str_line = raw_str_line.rstrip()
-        limit -= 1
+    build_string = ""
+    for data_line in fileread_csv:
+        if header_row is None:
+            header_row = data_line.rstrip().split(",")
+            len_col = len(header_row)
+            expected_commas = len_col - 1
 
-        if fieldnames is None:
-            # Making an assumption that no columns have a comma char in it.
-            fieldnames = str_line.split(",")
-            len_fieldnames = len(fieldnames)
         else:
-            error = False
+            build_string += data_line
 
-            # [footnote1]
-            try:
-                list_rowdata = get_data_from_line(str_line)
-            except IndexError as ie:
-                if "pop from empty list" in str(ie):
-                    error_rows.append(str_line)
-                    error = True
-                else:
-                    raise
-
-            if len_fieldnames != len(list_rowdata):
-                if error is False:
-                    error_rows.append(str_line)
-                    error = True
-
+            if build_string.count(",") < expected_commas:
+                continue
             else:
+                lst_rowdata = get_data_from_line(build_string, expected_commas)
+
                 dict_rowdata = {}
-                for x in range(0, len_fieldnames):
-                    dict_rowdata[fieldnames[x]] = list_rowdata[x]
+                for x in range(0, len_col):
+                    dict_rowdata[header_row[x]] = lst_rowdata[x]
 
-                # mongo_id = load_mongo(dict_rowdata)
-                list_fulldata.append(dict_rowdata)
+                try:
+                    dict_rowdata['latitude'] = float(dict_rowdata['latitude'])
+                    dict_rowdata['longitude'] = float(
+                        dict_rowdata['longitude'])
 
-        if limit == 0:
-            break
+                    # list_fulldata.append(dict_rowdata)
+                    list_fulldata[dict_rowdata["id"]] = dict_rowdata
+                except TypeError:
+                    error_list[dict_rowdata["id"]] = dict_rowdata
 
-    import json
-    json.dump(list_fulldata, open("data_limiteddump.json", "w+"))
+                build_string = ""
 
-# [footnote1] TODO: figure out why it fails
-#   Pretty sure because there is an empty line we are not considering.
-#   If i get around to it, then I will figure out why.
+    json.dump(list_fulldata, open("data_fulldump.json", "w+"))
