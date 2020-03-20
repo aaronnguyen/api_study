@@ -137,10 +137,8 @@ def find_nearby():
     #   etc until range is met. no point in fetching all locations at once
     #   if the user can't digest all the information at once.
     #       if a direct api call for external tool, then return all.
-    lst_nearby_rentals, sorted_idkeys = _find_rentals_nearby(
+    lst_nearby_rentals, nearby_keys_sorted = _find_rentals_nearby(
         data['latitude'], data['longitude'], data['distance'])
-
-    # build_search_ref =
 
     if "query" in data:
         # sort the search based on query relevance
@@ -200,18 +198,3 @@ def landmarks(query_str, coordinates, distance):
     # but an idea, find a location that is in between landmark and coord.
     # But constrained by distance.
     pass
-
-
-if __name__ == "__main__":
-    nearby_rentals, sorted_keys_asc = _find_rentals_nearby(
-        40.71344, -73.99037, 200)
-    test_query = "LowerEastSide"
-
-    for skey in sorted_keys_asc:
-        for id_key in nearby_rentals[skey]:
-            fuzz_score = fuzzy_search_query(
-                test_query, DATASET[id_key]["name"])
-            print(DATASET[id_key])
-            print(fuzz_score)
-            print("\n\n")
-    # fuzzy_search_query("")
