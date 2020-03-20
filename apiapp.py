@@ -118,18 +118,51 @@ def _check_request_fields(dict_datarequest, lst_requiredfields):
         return False
 
 
-@application.route('/')
-def index():
-    return jsonify(status=True, message='Rental Serach API.')
+# TODO: could load data into elastic search and we could utilize
+#   flexible search functions.
+# For brevity, will use fuzzy wuzzy lib to do fuzzy string match.
+#   Reduce host complexity as well.
+# https://github.com/seatgeek/fuzzywuzzy
+def _fuzzy_match(query_str, row_desc):
+    # use fuzzy search and find a location according to query.
+
+    # Used at work before, better results using all four and averaging
+    #   out the score.
+    f_part_r_val = fuzz.partial_ratio(query_str, row_desc)
+    f_r_val = fuzz.ratio(query_str, row_desc)
+    tsortr_val = fuzz.token_sort_ratio(query_str, row_desc)
+    tsetr_val = fuzz.token_set_ratio(query_str, row_desc)
+    avg_score = (f_part_r_val + f_r_val + tsortr_val + tsetr_val) / 4
+
+    return avg_score
 
 
-@application.route('/findnearby', methods=['GET'])
-def find_nearby():
-    data = request.get_json(force=True)
-    lst_reqfields = ["latitude", "longitude", "distance"]
-    if _check_request_fields(data, lst_reqfields) is False:
-        return jsonify(
-            status=False, message='Missing required search fields.'), 400
+def _fuzzy_search_query(query_str, lst_nearby_rentals):
+
+    fuzz_scores = {}
+    for dist_key in lst_nearby_rentals:
+        for doc_id in lst_nearby_rentals[dist_key]:
+            fuzz_score = _fuzzy_match(query_str, DATASET[doc_id]["name"])
+            if fuzz_score > 60:
+                if fuzz_score not in fuzz_scores:
+                    fuzz_scores[fuzz_score] = []
+                fuzz_scores[fuzz_score].append(doc_id)
+
+    # could save the keys while processing data
+    #   for brevity, and effecient point across, just get keys and sort.
+    #   reverse order, since we need desc.
+    return fuzz_scores, sorted(list(fuzz_scores.keys()), reverse=True)
+
+
+# TODO: impl
+def _nearby_landmarks(query_str, coordinates, distance):
+    # example given was probably just querying the desc.
+    # but an idea, find a location that is in between landmark and coord.
+    # But constrained by distance.
+    pass
+
+
+def _find_nearby_helper(data):
 
     # TODO: search optimization
     #   maybe search only 100m around the target
@@ -148,14 +181,14 @@ def find_nearby():
         #   will sort by relevance score. (closest to 100)
         #   but will cap off at 60%
         # Don't need to pass in sorted range, since it is already close by
-        lst_relevence_scores, relv_keys_sorted = fuzzy_search_query(
+        lst_relevence_scores, relv_keys_sorted = _fuzzy_search_query(
             data["query"], lst_nearby_rentals)
 
-    lst_filtered_ids = None
-    # Lots of other data we can filter by, but will focus on getting
+    # TODO: Lots of other data we can filter by, but will focus on getting
     #   it up and running first.
+    # reduce the list by the filters passed in
+    lst_filtered_ids = None
     if "filter" in data:
-        # reduce the list by the filters passed in
         pass
 
     # Build the return list based on the parameters above.
@@ -201,48 +234,22 @@ def find_nearby():
             popped_data = search_info.pop(d_id)
             rebuild_search_list.append(popped_data)
 
+    return rebuild_search_list
+
+
+# FLASK API Routes
+@application.route('/')
+def index():
+    return jsonify(status=True, message='Rental Serach API.')
+
+
+@application.route('/findnearby', methods=['GET'])
+def find_nearby():
+    data = request.get_json(force=True)
+    lst_reqfields = ["latitude", "longitude", "distance"]
+    if _check_request_fields(data, lst_reqfields) is False:
+        return jsonify(
+            status=False, message='Missing required search fields.'), 400
+
+    rebuild_search_list = _find_nearby_helper(data)
     return jsonify(status=True, data=rebuild_search_list)
-
-
-# TODO: could load data into elastic search and we could utilize
-#   flexible search functions.
-# For brevity, will use fuzzy wuzzy lib to do fuzzy string match.
-#   Reduce host complexity as well.
-# https://github.com/seatgeek/fuzzywuzzy
-def fuzzy_match(query_str, row_desc):
-    # use fuzzy search and find a location according to query.
-
-    # Used at work before, better results using all four and averaging
-    #   out the score.
-    f_part_r_val = fuzz.partial_ratio(query_str, row_desc)
-    f_r_val = fuzz.ratio(query_str, row_desc)
-    tsortr_val = fuzz.token_sort_ratio(query_str, row_desc)
-    tsetr_val = fuzz.token_set_ratio(query_str, row_desc)
-    avg_score = (f_part_r_val + f_r_val + tsortr_val + tsetr_val) / 4
-
-    return avg_score
-
-
-def fuzzy_search_query(query_str, lst_nearby_rentals):
-
-    fuzz_scores = {}
-    for dist_key in lst_nearby_rentals:
-        for doc_id in lst_nearby_rentals[dist_key]:
-            fuzz_score = fuzzy_match(query_str, DATASET[doc_id]["name"])
-            if fuzz_score > 60:
-                if fuzz_score not in fuzz_scores:
-                    fuzz_scores[fuzz_score] = []
-                fuzz_scores[fuzz_score].append(doc_id)
-
-    # could save the keys while processing data
-    #   for brevity, and effecient point across, just get keys and sort.
-    #   reverse order, since we need desc.
-    return fuzz_scores, sorted(list(fuzz_scores.keys()), reverse=True)
-
-
-# TODO: impl
-def landmarks(query_str, coordinates, distance):
-    # example given was probably just querying the desc.
-    # but an idea, find a location that is in between landmark and coord.
-    # But constrained by distance.
-    pass
