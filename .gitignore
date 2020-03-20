@@ -131,3 +131,4 @@ dmypy.json
 # proj specific
 mongo/persistent
 *.csv
+*.json
