@@ -70,25 +70,25 @@ def _findCoor_by_distAndBearing(anchor_lat, anchor_long, distance, degree_idx):
 # 90 = max long
 # 180 = min lat
 # 240 = min long
-def find_max_latitude(anchor_lat, anchor_long, distance, degree_idx):
+def find_max_latitude(anchor_lat, anchor_long, distance):
     return _findCoor_by_distAndBearing(
         anchor_lat, anchor_long, distance, 0
     )[0]
 
 
-def find_max_longitue(anchor_lat, anchor_long, distance, degree_idx):
+def find_max_longitude(anchor_lat, anchor_long, distance):
     return _findCoor_by_distAndBearing(
         anchor_lat, anchor_long, distance, 90
     )[1]
 
 
-def find_min_latitude(anchor_lat, anchor_long, distance, degree_idx):
+def find_min_latitude(anchor_lat, anchor_long, distance):
     return _findCoor_by_distAndBearing(
         anchor_lat, anchor_long, distance, 180
     )[0]
 
 
-def find_min_longitue(anchor_lat, anchor_long, distance, degree_idx):
+def find_min_longitude(anchor_lat, anchor_long, distance):
     return _findCoor_by_distAndBearing(
         anchor_lat, anchor_long, distance, 240
     )[1]
