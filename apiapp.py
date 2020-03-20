@@ -163,7 +163,7 @@ def find_nearby():
 # For brevity, will use fuzzy wuzzy lib to do fuzzy string match.
 #   Reduce host complexity as well.
 # https://github.com/seatgeek/fuzzywuzzy
-def fuzzy_search_query(query_str, row_desc):
+def fuzzy_match(query_str, row_desc):
     # use fuzzy search and find a location according to query.
 
     # Used at work before, better results using all four and averaging
@@ -173,7 +173,25 @@ def fuzzy_search_query(query_str, row_desc):
     tsortr_val = fuzz.token_sort_ratio(query_str, row_desc)
     tsetr_val = fuzz.token_set_ratio(query_str, row_desc)
     avg_score = (f_part_r_val + f_r_val + tsortr_val + tsetr_val) / 4
+
     return avg_score
+
+
+def fuzzy_search_query(query_str, lst_nearby_rentals):
+
+    fuzz_scores = {}
+    for dist_key in lst_nearby_rentals:
+        for doc_id in lst_nearby_rentals[dist_key]:
+            fuzz_score = fuzzy_match(query_str, DATASET[doc_id]["name"])
+            if fuzz_score > 60:
+                if fuzz_score not in fuzz_scores:
+                    fuzz_scores[fuzz_score] = []
+                fuzz_scores[fuzz_score].append(doc_id)
+
+    # could save the keys while processing data
+    #   for brevity, and effecient point across, just get keys and sort.
+    #   reverse order, since we need desc.
+    return fuzz_scores, sorted(list(fuzz_scores.keys()), reverse=True)
 
 
 # TODO: impl
