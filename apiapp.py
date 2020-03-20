@@ -5,15 +5,18 @@ Caching: when needed to scale. Some areas we can implement:
 - Add potential here
 
 """
+import json
+import logging
 import os
-from flask import Flask, request, jsonify
+
+import requests
+from flask import Flask, jsonify, request
 from flask_pymongo import PyMongo
 
-import logging
-import requests
-import json
-
-from calculate_distance import calc_latlong_distance_range
+from calculate_distance import find_max_latitude
+from calculate_distance import find_max_longitude
+from calculate_distance import find_min_latitude
+from calculate_distance import find_min_longitude
 
 
 application = Flask(__name__)
@@ -48,7 +51,25 @@ def find_nearby():
         return jsonify(
             status=False, message='Missing required search fields.'), 400
 
-    pass
+    # Find coordinate ranges for lats
+    # Find coordinate ranges for longs
+    max_lat = find_max_latitude(
+        data["latitude"], data["longitude"], data["distance"])
+    mat_lng = find_max_longitude(
+        data["latitude"], data["longitude"], data["distance"])
+    min_lat = find_min_latitude(
+        data["latitude"], data["longitude"], data["distance"])
+    min_lng = find_min_longitude(
+        data["latitude"], data["longitude"], data["distance"])
+
+    lst_nearby_rentals = []
+    # calcualte lat long diffs
+
+    # sort lat longs diff by value.
+
+    # get rental info by id # based on lat long diff
+
+    return jsonify(status=True, data=lst_nearby_rentals)
 
 
 def find_location_nearby(coordinates, distance):
@@ -70,5 +91,4 @@ def landmarks(query_str, coordinates, distance):
     # but an idea, find a location that is in between landmark and coord.
     # But constrained by distance.
     pass
-
 
