@@ -6,6 +6,7 @@ EARTHRADIUS = 6371000
 
 
 # https://stackoverflow.com/questions/837872/calculate-distance-in-meters-when-you-know-longitude-and-latitude-in-java
+# Found a function in java and ported it to Python.
 def calc_latlong_distance(coordinates1, coordinates2):
 
     lat1 = coordinates1[0]
@@ -21,7 +22,7 @@ def calc_latlong_distance(coordinates1, coordinates2):
         math.cos(math.radians(lat2)) *
         math.sin(dLng / 2) * math.sin(dLng / 2)
     )
-    circumf = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - area))
+    circumf = 2 * math.atan2(math.sqrt(area), math.sqrt(1 - area))
     distance = EARTHRADIUS * circumf
 
     return distance
@@ -65,7 +66,8 @@ def _findCoor_by_distAndBearing(anchor_lat, anchor_long, distance, degree_idx):
     return result_lat, result_long
 
 
-# NOTE:
+# NOTE: Bearing in degrees. Use the above function to create
+#       a square search zone.
 # 0 = max lat
 # 90 = max long
 # 180 = min lat
