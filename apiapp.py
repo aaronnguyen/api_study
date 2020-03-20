@@ -6,12 +6,13 @@ Caching: when needed to scale. Some areas we can implement:
 
 """
 import json
-import logging
-import os
+# import logging
+# import os
 
-import requests
+# import requests
 from flask import Flask, jsonify, request
-from flask_pymongo import PyMongo
+# from flask_pymongo import PyMongo
+from fuzzywuzzy import fuzz
 
 from calculate_distance import (calc_latlong_distance, find_max_latitude,
                                 find_max_longitude, find_min_latitude,
@@ -20,16 +21,28 @@ from calculate_distance import (calc_latlong_distance, find_max_latitude,
 application = Flask(__name__)
 
 # Development
-DATASET = json.load("data_limiteddata.json", "r")
+DATASET = json.load(open("data_fulldump.json", "r"))
 
 
 def _find_rentals_nearby(latitude, longitude, dist_range):
+    """
+    Input:
+    - Coordinates of the center of the search area.
+    - Range distance extending outside of the center.
+
+    Output:
+    - Dict of rental ids using the distance as the key.
+    - Sorted list of keys in asc order.
+    """
 
     # going to assume distance is the max that user is willing to go.
     # build a box around the coordinates. then start removing all the corners.
     # order by closest location.
-    lst_nearby_rentals = []
     rentals_by_range = {}
+
+    # Explicit of float
+    latitude = float(latitude)
+    longitude = float(longitude)
 
     # Find coordinate max min for lat and long
     # Range would be a circle a target coordinate
@@ -45,20 +58,23 @@ def _find_rentals_nearby(latitude, longitude, dist_range):
     min_lng = find_min_longitude(latitude, longitude, dist_range)
 
     # calculate lat long dist.
-    # currenlty very slow, iterating through all elements and checking the values
-    # when implementing the db search, we can search for entries based on range
+    # currently very slow
+    #   iterating through all elements and checking the values
+    # when implementing the db search,
+    #   we can search for entries based on range
     # Should be faster then iterating through a list line by line.
-    # If project is expaneded, could breakdown datasets into zones. counties. etc.
-    for row in DATASET:
-        r_lat = int(row['latitude'])
-        r_lng = int(row['longitude'])
+    # If project is expanded,
+    #   breakdown datasets into zones. counties. etc.
+    for row_id in DATASET:
+        row = DATASET[row_id]
+        r_lat = float(row['latitude'])
+        r_lng = float(row['longitude'])
 
         # if the entry is within the zone.
         if ((r_lat >= min_lat and r_lat <= max_lat) or
                 (r_lng >= min_lng and r_lng <= max_lng)):
             dist = calc_latlong_distance([r_lat, r_lng], [latitude, longitude])
             if dist <= dist_range:
-                lst_nearby_rentals(row["id"])
 
                 # create a reference of ids based on distance.
                 # when we sort the keys, we should have a list of closest
@@ -69,16 +85,21 @@ def _find_rentals_nearby(latitude, longitude, dist_range):
 
     # sort lat longs diff by value.
     #   saved the keys as ints means we can sort them easily.
-    #   probably a better way to do this.
-    list_nearby_rental_ids = []
-    for range_key in sorted(list(rentals_by_range.keys())):
-
-        # Since they are all lists, just extend them into the output.
-        list_nearby_rental_ids.extend(rentals_by_range[range_key])
-
+    #   instead of building a totally new list object
+    #   just add the sorted keys to the already created dict.
+    # just using the sorted function in python. timsort seems pretty effecient.
+    # NOTE: originally added the sorted list of keys into the dict.
+    #   Just returning it as 2 items.
     # get rental info by id # based on lat long diff
-    return list_nearby_rental_ids
-
+    # TODO: maybe save some of these calculations?
+    #   We could quickly calculate distance using pythagorean theorem
+    #   although the Earth is curved, shouldn't be much
+    #       difference in distance if nearby.
+    #   Maybe when calculating distances, if the zone falls within a cached
+    #   search range, then we can use those locations from that search.
+    #   Maybe search that first? to save lookup? then search for new locations
+    #   outside of the already searched area.
+    return rentals_by_range, sorted(list(rentals_by_range.keys()))
 
 
 def _check_request_fields(dict_datarequest, lst_requiredfields):
@@ -110,18 +131,41 @@ def find_nearby():
         return jsonify(
             status=False, message='Missing required search fields.'), 400
 
-    lst_nearby_rentals = _find_rentals_nearby(
+    lst_nearby_rentals, sorted_idkeys = _find_rentals_nearby(
         data['latitude'], data['longitude'], data['distance'])
+
+    # build_search_ref =
+
+    if "query" in data:
+        # reduce the search based on the query relevance.
+        pass
+
+    if "filter" in data:
+        # reduce the list by the filters passed in
+        pass
 
     return jsonify(status=True, data=lst_nearby_rentals)
 
 
-
-def fuzzy_search_description(query_str):
+# TODO: could load data into elastic search and we could utilize
+#   flexible search functions.
+# For brevity, will use fuzzy wuzzy lib to do fuzzy string match.
+#   Reduce host complexity as well.
+# https://github.com/seatgeek/fuzzywuzzy
+def fuzzy_search_query(query_str, row_desc):
     # use fuzzy search and find a location according to query.
-    pass
+
+    # Used at work before, better results using all four and averaging
+    #   out the score.
+    f_part_r_val = fuzz.partial_ratio(query_str, row_desc)
+    f_r_val = fuzz.ratio(query_str, row_desc)
+    tsortr_val = fuzz.token_sort_ratio(query_str, row_desc)
+    tsetr_val = fuzz.token_set_ratio(query_str, row_desc)
+    avg_score = (f_part_r_val + f_r_val + tsortr_val + tsetr_val) / 4
+    return avg_score
 
 
+# TODO: impl
 def landmarks(query_str, coordinates, distance):
     # example given was probably just querying the desc.
     # but an idea, find a location that is in between landmark and coord.
@@ -129,6 +173,16 @@ def landmarks(query_str, coordinates, distance):
     pass
 
 
-
 if __name__ == "__main__":
-    _find_rentals_nearby(40.71344, -73.99037, 2000)
+    nearby_rentals, sorted_keys_asc = _find_rentals_nearby(
+        40.71344, -73.99037, 200)
+    test_query = "LowerEastSide"
+
+    for skey in sorted_keys_asc:
+        for id_key in nearby_rentals[skey]:
+            fuzz_score = fuzzy_search_query(
+                test_query, DATASET[id_key]["name"])
+            print(DATASET[id_key])
+            print(fuzz_score)
+            print("\n\n")
+    # fuzzy_search_query("")
