@@ -131,13 +131,24 @@ def find_nearby():
         return jsonify(
             status=False, message='Missing required search fields.'), 400
 
+    # TODO: search optimization
+    #   maybe search only 100m around the target
+    #   then do another search for locations 100m-1000m
+    #   etc until range is met. no point in fetching all locations at once
+    #   if the user can't digest all the information at once.
+    #       if a direct api call for external tool, then return all.
     lst_nearby_rentals, sorted_idkeys = _find_rentals_nearby(
         data['latitude'], data['longitude'], data['distance'])
 
     # build_search_ref =
 
     if "query" in data:
-        # reduce the search based on the query relevance.
+        # sort the search based on query relevance
+        # how much of a match do we say is relevant?
+        #   will sort by relevance score. (closest to 100)
+        #   but will cap off at 60%
+        # Don't need to pass in sorted range, since it is already close by
+        relevant_data = fuzzy_search_query(data["query"], lst_nearby_rentals)
         pass
 
     if "filter" in data:
