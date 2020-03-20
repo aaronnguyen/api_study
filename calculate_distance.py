@@ -1,85 +1,94 @@
-
-
-# # https://stackoverflow.com/questions/837872/calculate-distance-in-meters-when-you-know-longitude-and-latitude-in-java
-#  public static float distFrom(float lat1, float lng1, float lat2, float lng2) {
-#     double earthRadius = 6371000; //meters
-#     double dLat = Math.toRadians(lat2-lat1);
-#     double dLng = Math.toRadians(lng2-lng1);
-#     double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-#                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
-#                Math.sin(dLng/2) * Math.sin(dLng/2);
-#     double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-#     float dist = (float) (earthRadius * c);
-
-#     return dist;
-
-
 import math
 
 
-def calc_latlong_distance(float_lat, float_lng, range):
-    earth_radius = 6371000
+# Radius of the Earth in meters
+EARTHRADIUS = 6371000
+
+
+# https://stackoverflow.com/questions/837872/calculate-distance-in-meters-when-you-know-longitude-and-latitude-in-java
+def calc_latlong_distance(coordinates1, coordinates2):
+
+    lat1 = coordinates1[0]
+    lng1 = coordinates1[1]
+    lat2 = coordinates2[0]
+    lng2 = coordinates2[1]
+
+    dLat = math.radians(lat2 - lat1)
+    dLng = math.radians(lng2 - lng1)
+    area = (
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(math.radians(lat1)) *
+        math.cos(math.radians(lat2)) *
+        math.sin(dLng / 2) * math.sin(dLng / 2)
+    )
+    circumf = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - area))
+    distance = EARTHRADIUS * circumf
 
     return distance
 
 
-def calc_latlong_distance(
-        float_lat1, float_lng1, float_lat2, float_lng2, range):
+# https://stackoverflow.com/questions/7222382/get-lat-long-given-current-point-distance-and-bearing
+# Definately spent way too much time on trying to work the equation backwards.
+# Decided to just look up a solution and work it into the project.
+def _findCoor_by_distAndBearing(anchor_lat, anchor_long, distance, degree_idx):
+    degree_bearing = {
+        0: 0,
+        90: 1.57,
+        180: 3.14,
+        240: 4.18
+    }
+    bearing = degree_bearing[degree_idx]
 
-    # In Meters
-    earthRadius = 6371000
+    # convert to radians
+    radians_lat = math.radians(anchor_lat)
+    radians_long = math.radians(anchor_long)
 
-    dLat = math.radians(float_lat2 - float_lat1)
-    dLng = math.radians(float_lng2 - float_lng1)
-    a = (
-        math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(math.radians(float_lat1)) *
-        math.cos(math.radians(float_lat2)) *
-        math.sin(dLng / 2) * math.sin(dLng / 2)
-    )
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    dist = earthRadius * c
+    dist_div_earthrad = distance / EARTHRADIUS
 
-    return dist
+    result_lat = (
+        math.asin(
+            math.sin(radians_lat) * math.cos(dist_div_earthrad) +
+            math.cos(radians_lat) * math.sin(dist_div_earthrad) *
+            math.cos(bearing)))
 
-
-# use the equation above and just work backwards
-def calc_max_min_lat(
-        float_lat1, float_lng1, max_range):
-
-    # same long, just find max min lat by dist.
-    # float_lng2 = float_lng1
-
-    # min_range = max_range * -1
-    # irrelevant, since we can just do cmax * -1 below
-
-    # In Meters
-    earthRadius = 6371000
-
-    # max_range = earthRadius * c
-    # try to find c.
-    cmax = max_range / earthRadius
-    cmin = cmax * -1
-    # we'll just worry about cmax for now.
-
-    # cmax = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    # cmax / 2 = math.atan2(sqrt(a), sqrt(1-a))
-
-    dLat = math.radians(float_lat2 - float_lat1)
-    # dLng = math.radians(float_lng1 - float_lng1)
-    # = 0
-    a = (
-        math.sin(dLat / 2) * math.sin(dLat / 2) 
-
-        # NOTE: since sin(0) is 0, this is all 0
-        # +
-        # math.cos(math.radians(float_lat1)) *
-        # math.cos(math.radians(float_lat2)) *
-        # math.sin(0 / 2) * math.sin(0 / 2)
-        
+    result_long = (
+        radians_long + math.atan2(
+            (math.sin(bearing) * math.sin(dist_div_earthrad) *
+             math.cos(radians_lat)),
+            (math.cos(dist_div_earthrad) - math.sin(radians_lat) *
+             math.sin(result_lat))
+        )
     )
 
+    result_lat = math.degrees(result_lat)
+    result_long = math.degrees(result_long)
+    return result_lat, result_long
 
 
-    # return dist
-    return False
+# NOTE:
+# 0 = max lat
+# 90 = max long
+# 180 = min lat
+# 240 = min long
+def find_max_latitude(anchor_lat, anchor_long, distance, degree_idx):
+    return _findCoor_by_distAndBearing(
+        anchor_lat, anchor_long, distance, 0
+    )[0]
+
+
+def find_max_longitue(anchor_lat, anchor_long, distance, degree_idx):
+    return _findCoor_by_distAndBearing(
+        anchor_lat, anchor_long, distance, 90
+    )[1]
+
+
+def find_min_latitude(anchor_lat, anchor_long, distance, degree_idx):
+    return _findCoor_by_distAndBearing(
+        anchor_lat, anchor_long, distance, 180
+    )[0]
+
+
+def find_min_longitue(anchor_lat, anchor_long, distance, degree_idx):
+    return _findCoor_by_distAndBearing(
+        anchor_lat, anchor_long, distance, 240
+    )[1]
