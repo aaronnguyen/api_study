@@ -140,20 +140,68 @@ def find_nearby():
     lst_nearby_rentals, nearby_keys_sorted = _find_rentals_nearby(
         data['latitude'], data['longitude'], data['distance'])
 
+    lst_relevence_scores = None
+    relv_keys_sorted = None
     if "query" in data:
         # sort the search based on query relevance
         # how much of a match do we say is relevant?
         #   will sort by relevance score. (closest to 100)
         #   but will cap off at 60%
         # Don't need to pass in sorted range, since it is already close by
-        relevant_data = fuzzy_search_query(data["query"], lst_nearby_rentals)
-        pass
+        lst_relevence_scores, relv_keys_sorted = fuzzy_search_query(
+            data["query"], lst_nearby_rentals)
 
+    lst_filtered_ids = None
+    # Lots of other data we can filter by, but will focus on getting
+    #   it up and running first.
     if "filter" in data:
         # reduce the list by the filters passed in
         pass
 
-    return jsonify(status=True, data=lst_nearby_rentals)
+    # Build the return list based on the parameters above.
+    search_info = {}
+    doc_id_list = []
+
+    # NOTE: How do we balance relevance and distance?
+    #   for now will just prioritize relevance over distance.
+    #   Only process it if we have the data for it.
+    if lst_relevence_scores is not None:
+        for r_key in relv_keys_sorted:
+            for d_id in lst_relevence_scores[r_key]:
+                search_info[d_id] = {
+                    "rental_id": d_id,
+                    "relevance": r_key
+                }
+                doc_id_list.append(d_id)
+
+    # same here, only process if we have the data.
+    if lst_filtered_ids is not None:
+        pass
+
+    # always process the nearby location.
+    for n_key in nearby_keys_sorted:
+        for d_id in lst_nearby_rentals[n_key]:
+            if d_id not in search_info:
+                search_info[d_id] = {
+                    "rental_id": d_id,
+                    "distance": n_key
+                }
+            else:
+                search_info[d_id]["distance"] = n_key
+
+            # There will be duplicates, but we'll take care of that.
+            doc_id_list.append(d_id)
+
+    rebuild_search_list = []
+    for d_id in doc_id_list:
+
+        # search shoudl be instant since it is just looking for existence.
+        # also handles dups by popping the key val out.
+        if d_id in search_info:
+            popped_data = search_info.pop(d_id)
+            rebuild_search_list.append(popped_data)
+
+    return jsonify(status=True, data=rebuild_search_list)
 
 
 # TODO: could load data into elastic search and we could utilize
