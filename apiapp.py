@@ -1,16 +1,19 @@
 """
 ## Flask API
 
-Caching: when needed to scale. Some areas we can implement:
-- Add potential here
+Simple API implementation within a single GET request.
+Generally wrap these in a docker container and could deploy to cluster.
+I use cherryPy because it was so simple to run, but heard Flask was pretty
+good. So I decided to give it a try.
 
+Wanted to try out connecting pymongo to flask, but was spending too much time
+trying to connect to the server.
 """
-# import logging
-
 from flask import Flask, jsonify, request
-# from flask_pymongo import PyMongo
 from fuzzywuzzy import fuzz
 
+# Placed code into other files, I find the larger the py file, the harder
+# it is to support.
 from calculate_distance import (calc_latlong_distance, find_max_latitude,
                                 find_max_longitude, find_min_latitude,
                                 find_min_longitude)
@@ -22,46 +25,61 @@ dbconn = dataconn(json_quickload="data_fulldump.json")
 
 def _find_rentals_nearby(latitude, longitude, dist_range):
     """
-    Input:
+    #### Input:
+
     - Coordinates of the center of the search area.
     - Range distance extending outside of the center.
 
-    Output:
+    #### Output:
+
     - Dict of rental ids using the distance as the key.
     - Sorted list of keys in asc order.
+
+    #### Assumption:
+
+    - range is the max dist, the user is willing to go.
+
+    #### Ideas:
+
+    Maybe we can cache some of these calculations? We could quickly
+    calculate distance using pythagorean theorem. Although the Earth is curved,
+    shouldn't be much of a difference in distance if nearby.
+    When calculating distances, if the zone falls within a cached search range,
+    we could use those locations from the search.  Then we could search the
+    area that sits outside of the full search zone.
     """
 
-    # going to assume distance is the max that user is willing to go.
-    # build a box around the coordinates. then start removing all the corners.
-    # order by closest location.
     rentals_by_range = {}
 
-    # Explicit of float
+    # make sure they are explicitly floats.
     latitude = float(latitude)
     longitude = float(longitude)
 
-    # Find coordinate max min for lat and long
-    # Range would be a circle a target coordinate
-    # Build a square box around the search location for easier implementation.
-    #   using a box to reduce the search space.
-    # Just search areas around this zone and calculate the distance
-    #   This will return a circle
-    #   The more we break down the zones
-    #       the more we can get closer to a circle search.
+    """
+    Find coordinate max min for lat and long.
+    Range would be a circle a target coordinate.
+    First build a square box around the search location then find rentals
+    within that zone.  Only using it to reduce the search results.
+    Then calculate the distance for each result, and if it falls within the
+    distance range, the zone would turn into a circle.
+
+
+    The more we breadown the search zone, the closer we could get to a circle.
+    Maybe consider an octogon instead of a square?
+    """
     max_lat = find_max_latitude(latitude, longitude, dist_range)
     max_lng = find_max_longitude(latitude, longitude, dist_range)
     min_lat = find_min_latitude(latitude, longitude, dist_range)
     min_lng = find_min_longitude(latitude, longitude, dist_range)
 
-    # calculate lat long dist.
-    # currently very slow
-    #   iterating through all elements and checking the values
-    # when implementing the db search,
-    #   we can search for entries based on range
-    # Should be faster then iterating through a list line by line.
-    # If project is expanded,
-    #   breakdown datasets into zones. counties. etc.
-    # TODO: a real iterable obj here
+    """
+    Currently we are iterating through all elements of the dataset to see
+    if the rental property resides within the search zone limits.  We could
+    reorganize the data here into smaller search areas.  Maybe breakdown into
+    neighborhoods, then calculate the distance between different neighborhoods.
+    THen when calculating the distance, we could search through certain areaas
+    and their neighbors.
+    """
     for row in dbconn.get_data_row_iter():
         r_lat = float(row['latitude'])
         r_lng = float(row['longitude'])
@@ -79,34 +97,28 @@ def _find_rentals_nearby(latitude, longitude, dist_range):
                     rentals_by_range[dist] = []
                 rentals_by_range[dist].append(row["id"])
 
-    # sort lat longs diff by value.
-    #   saved the keys as ints means we can sort them easily.
-    #   instead of building a totally new list object
-    #   just add the sorted keys to the already created dict.
-    # just using the sorted function in python. timsort seems pretty effecient.
-    # NOTE: originally added the sorted list of keys into the dict.
-    #   Just returning it as 2 items.
-    # get rental info by id # based on lat long diff
-    # TODO: maybe save some of these calculations?
-    #   We could quickly calculate distance using pythagorean theorem
-    #   although the Earth is curved, shouldn't be much
-    #       difference in distance if nearby.
-    #   Maybe when calculating distances, if the zone falls within a cached
-    #   search range, then we can use those locations from that search.
-    #   Maybe search that first? to save lookup? then search for new locations
-    #   outside of the already searched area.
+    """
+    Since we have the range as keys, we can sort the keys by distance and then
+    search through the dict of lists by distance order.  Luckily we could use
+    ints as dict keys.  If given time, could have figured out a better way to
+    implement the search.  Original idea was to dump the data into MongoDB and
+    search for the elements using the keys. Just using the sorted function in
+    python, which seems to be pretty effecient already.
+    """
     return rentals_by_range, sorted(list(rentals_by_range.keys()))
 
 
 def _check_request_fields(dict_datarequest, lst_requiredfields):
     """
-    Input:
+    #### Input:
 
     - Data request from the HTTP call (Just passed the whole thing in)
     - List of expected keys.
-    """
 
-    # Use set subtraction to figure out if we are missing any fields.
+    #### Desc:
+
+    Use set subtraction to figure out if we are missing any fields.
+    """
     reqfields = set(lst_requiredfields) - set(dict_datarequest.keys())
     if len(reqfields) == 0:
         return True
@@ -114,23 +126,29 @@ def _check_request_fields(dict_datarequest, lst_requiredfields):
         return False
 
 
-# TODO: could load data into elastic search and we could utilize
-#   flexible search functions.
-# For brevity, will use fuzzy wuzzy lib to do fuzzy string match.
-#   Reduce host complexity as well.
-# https://github.com/seatgeek/fuzzywuzzy
 def _fuzzy_match(query_str, row_desc):
     """
-    Input:
+    #### Input:
     - 2 strings to compare
 
-    Output:
+    #### Output:
     - An average of the result values based on all available checks.
-    """
-    # use fuzzy search and find a location according to query.
 
-    # Used at work before, better results using all four and averaging
-    #   out the score. This is to compensate for human mispellings.
+    #### Desc:
+    For brevity, will use fuzzy wuzzy lib to do fuzzy string match.
+    Also allows API app to be more independent.  Will put link to lib's github
+    in the README.
+
+    Will use fuzzy search to match up query with the name listed in the row.
+    Used at work before, better results using all four and averaging
+    out the score. This is to compensate for human mispellings.
+
+    #### Ideas:
+
+    Could load data into elastic search and we could utilize more flexible
+    search functions.
+    """
+
     f_part_r_val = fuzz.partial_ratio(query_str, row_desc)
     f_r_val = fuzz.ratio(query_str, row_desc)
     tsortr_val = fuzz.token_sort_ratio(query_str, row_desc)
@@ -142,11 +160,11 @@ def _fuzzy_match(query_str, row_desc):
 
 def _fuzzy_search_query(query_str, lst_nearby_rentals):
     """
-    Input:
+    #### Input:
     - query string to search
     - subset of data set to look within
 
-    Output:
+    #### Output:
     - dictionary
         - key: fuzzy search score
         - value: document id
@@ -162,47 +180,53 @@ def _fuzzy_search_query(query_str, lst_nearby_rentals):
                     fuzz_scores[fuzz_score] = []
                 fuzz_scores[fuzz_score].append(doc_id)
 
-    # could save the keys while processing data
-    #   for brevity, and effecient point across, just get keys and sort.
-    #   reverse order, since we need desc.
+    # If working with a large set of keys, probably not the best idea to
+    # sort the keys here and return.
     return fuzz_scores, sorted(list(fuzz_scores.keys()), reverse=True)
 
 
-# TODO: impl
 def _nearby_landmarks(query_str, coordinates, distance):
-    # example given was probably just querying the desc.
-    # but an idea, find a location that is in between landmark and coord.
-    # But constrained by distance.
+    """
+    TODO: implement function.
+    Could use the query to determine certain landmarks and find a location
+    nearby it.  Could find rentals between the search location and the
+    landmark.  Search could still be constrained by distance.
+    """
     pass
 
 
-# Pull this out of the main api function. wanted to be able to focus on just
-#   the api portion in the api function itself.
 def _find_nearby_helper(data):
+    """
+    #### Input:
 
-    # TODO: search optimization
-    #   maybe search only 100m around the target
-    #   then do another search for locations 100m-1000m
-    #   etc until range is met. no point in fetching all locations at once
-    #   if the user can't digest all the information at once.
-    #       if a direct api call for external tool, then return all.
+    - Data dictionary from Flask request
+
+    #### Output:
+
+    - List of rentals, ordered by relevance to query than distance.
+
+    #### Ideas:
+    Search optimization: maybe search only 100m (maybe a percentage range?)
+    around the target then do another search for locations 100m-1000m. Could
+    create an interable object to fetch chunks.  No point in fetch all
+    locations at once if user can't digest all the information at once.
+    """
+
     lst_nearby_rentals, nearby_keys_sorted = _find_rentals_nearby(
         data['latitude'], data['longitude'], data['distance'])
 
     lst_relevence_scores = None
     relv_keys_sorted = None
     if "query" in data:
-        # sort the search based on query relevance
-        # how much of a match do we say is relevant?
-        #   will sort by relevance score. (closest to 100)
-        #   but will cap off at 60%
+        # Sort the search based on query relevance
+        # Will sort by relevance score. (closest to 100)
+        # Cap match at 60%, if anything lower, don't include.
         # Don't need to pass in sorted range, since it is already close by
         lst_relevence_scores, relv_keys_sorted = _fuzzy_search_query(
             data["query"], lst_nearby_rentals)
 
     # TODO: Lots of other data we can filter by, but will focus on getting
-    #   it up and running first.
-    # reduce the list by the filters passed in
+    # it up and running.  Reduce the list by the filters passed in.
     lst_filtered_ids = None
     if "filter" in data:
         pass
@@ -211,9 +235,9 @@ def _find_nearby_helper(data):
     search_info = {}
     doc_id_list = []
 
-    # NOTE: How do we balance relevance and distance?
-    #   for now will just prioritize relevance over distance.
-    #   Only process it if we have the data for it.
+    # How do we balance relevance and distance?
+    # For now will just prioritize relevance over distance.
+    # Only process it if we have the data for it.
     if lst_relevence_scores is not None:
         for r_key in relv_keys_sorted:
             for d_id in lst_relevence_scores[r_key]:
@@ -223,11 +247,11 @@ def _find_nearby_helper(data):
                 }
                 doc_id_list.append(d_id)
 
-    # same here, only process if we have the data.
+    # Same as above, only process if we have the data.
     if lst_filtered_ids is not None:
         pass
 
-    # always process the nearby location.
+    # Always process the nearby locations list.
     for n_key in nearby_keys_sorted:
         for d_id in lst_nearby_rentals[n_key]:
             if d_id not in search_info:
@@ -244,8 +268,9 @@ def _find_nearby_helper(data):
     rebuild_search_list = []
     for d_id in doc_id_list:
 
-        # search shoudl be instant since it is just looking for existence.
-        # also handles dups by popping the key val out.
+        # Lookup should be instant since it is just looking for existence.
+        # Since we are popping the keys out, there will be no duplicates
+        # in the results.
         if d_id in search_info:
             popped_data = search_info.pop(d_id)
             rebuild_search_list.append(popped_data)
@@ -261,6 +286,7 @@ def index():
 
 @application.route('/findnearby', methods=['GET'])
 def find_nearby():
+
     data = request.get_json(force=True)
 
     # Have a list of required fields and return error if not met.
@@ -271,5 +297,4 @@ def find_nearby():
 
     rebuild_search_list = _find_nearby_helper(data)
     return jsonify(status=True, data=rebuild_search_list)
-
     # TODO: return an error status if no results.
