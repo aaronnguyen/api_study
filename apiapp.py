@@ -204,8 +204,10 @@ def _find_nearby_helper(data):
     #### Output:
 
     - List of rentals, ordered by relevance to query than distance.
+        - Includes the data row information to the rental as well.
 
     #### Ideas:
+
     Search optimization: maybe search only 100m (maybe a percentage range?)
     around the target then do another search for locations 100m-1000m. Could
     create an interable object to fetch chunks.  No point in fetch all
@@ -273,7 +275,10 @@ def _find_nearby_helper(data):
         # in the results.
         if d_id in search_info:
             popped_data = search_info.pop(d_id)
-            rebuild_search_list.append(popped_data)
+            rebuild_search_list.append({
+                "searchinfo": popped_data,
+                "rentalinfo": dbconn.get_data_row_by_id(d_id)
+            })
 
     return rebuild_search_list
 
