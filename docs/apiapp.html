@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>apiapp.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>apiapp.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p>Simple API implementation within a single GET request.
+Generally wrap these in a docker container and could deploy to cluster.
+I use cherryPy because it was so simple to run, but heard Flask was pretty
+good. So I decided to give it a try.</p>
+<p>Wanted to try out connecting pymongo to flask, but was spending too much time
+trying to connect to the server.</p>
+<p><a href="https://flask.palletsprojects.com/en/1.1.x/">Flask API</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">jsonify</span><span class="p">,</span> <span class="n">request</span>
+<span class="kn">from</span> <span class="nn">fuzzywuzzy</span> <span class="kn">import</span> <span class="n">fuzz</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <p>Placed code into other files, I find the larger the py file, the harder
+it is to support.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="kn">from</span> <span class="nn">calculate_distance</span> <span class="kn">import</span> <span class="p">(</span><span class="n">calc_latlong_distance</span><span class="p">,</span> <span class="n">find_max_latitude</span><span class="p">,</span>
+                                <span class="n">find_max_longitude</span><span class="p">,</span> <span class="n">find_min_latitude</span><span class="p">,</span>
+                                <span class="n">find_min_longitude</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">data_connection</span> <span class="kn">import</span> <span class="n">dataconn</span>
+
+<span class="n">application</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">dbconn</span> <span class="o">=</span> <span class="n">dataconn</span><span class="p">(</span><span class="n">json_quickload</span><span class="o">=</span><span class="s2">&quot;data_fulldump.json&quot;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <h4>Input:</h4>
+<ul>
+<li>Coordinates of the center of the search area.</li>
+<li>Range distance extending outside of the center.</li>
+</ul>
+<h4>Output:</h4>
+<ul>
+<li>Dict of rental ids using the distance as the key.</li>
+<li>Sorted list of keys in asc order.</li>
+</ul>
+<h4>Assumption:</h4>
+<ul>
+<li>range is the max dist, the user is willing to go.</li>
+</ul>
+<h4>Ideas:</h4>
+<p>Maybe we can cache some of these calculations? We could quickly
+calculate distance using pythagorean theorem. Although the Earth is curved,
+shouldn&rsquo;t be much of a difference in distance if nearby.
+When calculating distances, if the zone falls within a cached search range,
+we could use those locations from the search.  Then we could search the
+area that sits outside of the full search zone.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_find_rentals_nearby</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">,</span> <span class="n">dist_range</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">rentals_by_range</span> <span class="o">=</span> <span class="p">{}</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>make sure they are explicitly floats.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">latitude</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">latitude</span><span class="p">)</span>
+    <span class="n">longitude</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">longitude</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>Find coordinate max min for lat and long.
+Range would be a circle a target coordinate.
+First build a square box around the search location then find rentals
+within that zone.  Only using it to reduce the search results.
+Then calculate the distance for each result, and if it falls within the
+distance range, the zone would turn into a circle.</p>
+<p>The more we breadown the search zone, the closer we could get to a circle.
+Maybe consider an octogon instead of a square?</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">max_lat</span> <span class="o">=</span> <span class="n">find_max_latitude</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">,</span> <span class="n">dist_range</span><span class="p">)</span>
+    <span class="n">max_lng</span> <span class="o">=</span> <span class="n">find_max_longitude</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">,</span> <span class="n">dist_range</span><span class="p">)</span>
+    <span class="n">min_lat</span> <span class="o">=</span> <span class="n">find_min_latitude</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">,</span> <span class="n">dist_range</span><span class="p">)</span>
+    <span class="n">min_lng</span> <span class="o">=</span> <span class="n">find_min_longitude</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">,</span> <span class="n">dist_range</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <p>Currently we are iterating through all elements of the dataset to see
+if the rental property resides within the search zone limits.  We could
+reorganize the data here into smaller search areas.  Maybe breakdown into
+neighborhoods, then calculate the distance between different neighborhoods.
+THen when calculating the distance, we could search through certain areaas
+and their neighbors.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">dbconn</span><span class="o">.</span><span class="n">get_data_row_iter</span><span class="p">():</span>
+        <span class="n">r_lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;latitude&#39;</span><span class="p">])</span>
+        <span class="n">r_lng</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;longitude&#39;</span><span class="p">])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>if the entry is within the zone.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="p">((</span><span class="n">r_lat</span> <span class="o">&gt;=</span> <span class="n">min_lat</span> <span class="ow">and</span> <span class="n">r_lat</span> <span class="o">&lt;=</span> <span class="n">max_lat</span><span class="p">)</span> <span class="ow">or</span>
+                <span class="p">(</span><span class="n">r_lng</span> <span class="o">&gt;=</span> <span class="n">min_lng</span> <span class="ow">and</span> <span class="n">r_lng</span> <span class="o">&lt;=</span> <span class="n">max_lng</span><span class="p">)):</span>
+            <span class="n">dist</span> <span class="o">=</span> <span class="n">calc_latlong_distance</span><span class="p">([</span><span class="n">r_lat</span><span class="p">,</span> <span class="n">r_lng</span><span class="p">],</span> <span class="p">[</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">dist_range</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      <p>create a reference of ids based on distance.
+when we sort the keys, we should have a list of closest
+  to farthest locations.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                <span class="k">if</span> <span class="n">dist</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rentals_by_range</span><span class="p">:</span>
+                    <span class="n">rentals_by_range</span><span class="p">[</span><span class="n">dist</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">rentals_by_range</span><span class="p">[</span><span class="n">dist</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>Since we have the range as keys, we can sort the keys by distance and then
+search through the dict of lists by distance order.  Luckily we could use
+ints as dict keys.  If given time, could have figured out a better way to
+implement the search.  Original idea was to dump the data into MongoDB and
+search for the elements using the keys. Just using the sorted function in
+python, which seems to be pretty effecient already.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="n">rentals_by_range</span><span class="p">,</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">rentals_by_range</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <h4>Input:</h4>
+<ul>
+<li>Data request from the HTTP call (Just passed the whole thing in)</li>
+<li>List of expected keys.</li>
+</ul>
+<h4>Desc:</h4>
+<p>Use set subtraction to figure out if we are missing any fields.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_check_request_fields</span><span class="p">(</span><span class="n">dict_datarequest</span><span class="p">,</span> <span class="n">lst_requiredfields</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">reqfields</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">lst_requiredfields</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">dict_datarequest</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reqfields</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <h4>Input:</h4>
+<ul>
+<li>2 strings to compare</li>
+</ul>
+<h4>Output:</h4>
+<ul>
+<li>An average of the result values based on all available checks.</li>
+</ul>
+<h4>Desc:</h4>
+<p>For brevity, will use fuzzy wuzzy lib to do fuzzy string match.
+Also allows API app to be more independent.  Will put link to lib&rsquo;s github
+in the README.</p>
+<p>Will use fuzzy search to match up query with the name listed in the row.
+Used at work before, better results using all four and averaging
+out the score. This is to compensate for human mispellings.</p>
+<h4>Ideas:</h4>
+<p>Could load data into elastic search and we could utilize more flexible
+search functions.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_fuzzy_match</span><span class="p">(</span><span class="n">query_str</span><span class="p">,</span> <span class="n">row_desc</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">f_part_r_val</span> <span class="o">=</span> <span class="n">fuzz</span><span class="o">.</span><span class="n">partial_ratio</span><span class="p">(</span><span class="n">query_str</span><span class="p">,</span> <span class="n">row_desc</span><span class="p">)</span>
+    <span class="n">f_r_val</span> <span class="o">=</span> <span class="n">fuzz</span><span class="o">.</span><span class="n">ratio</span><span class="p">(</span><span class="n">query_str</span><span class="p">,</span> <span class="n">row_desc</span><span class="p">)</span>
+    <span class="n">tsortr_val</span> <span class="o">=</span> <span class="n">fuzz</span><span class="o">.</span><span class="n">token_sort_ratio</span><span class="p">(</span><span class="n">query_str</span><span class="p">,</span> <span class="n">row_desc</span><span class="p">)</span>
+    <span class="n">tsetr_val</span> <span class="o">=</span> <span class="n">fuzz</span><span class="o">.</span><span class="n">token_set_ratio</span><span class="p">(</span><span class="n">query_str</span><span class="p">,</span> <span class="n">row_desc</span><span class="p">)</span>
+    <span class="n">avg_score</span> <span class="o">=</span> <span class="p">(</span><span class="n">f_part_r_val</span> <span class="o">+</span> <span class="n">f_r_val</span> <span class="o">+</span> <span class="n">tsortr_val</span> <span class="o">+</span> <span class="n">tsetr_val</span><span class="p">)</span> <span class="o">/</span> <span class="mi">4</span>
+
+    <span class="k">return</span> <span class="n">avg_score</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <h4>Input:</h4>
+<ul>
+<li>query string to search</li>
+<li>subset of data set to look within</li>
+</ul>
+<h4>Output:</h4>
+<ul>
+<li>dictionary<ul>
+<li>key: fuzzy search score</li>
+<li>value: document id</li>
+</ul>
+</li>
+<li>sorted list of the scores keys in desc order.</li>
+</ul>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_fuzzy_search_query</span><span class="p">(</span><span class="n">query_str</span><span class="p">,</span> <span class="n">lst_nearby_rentals</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">fuzz_scores</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">dist_key</span> <span class="ow">in</span> <span class="n">lst_nearby_rentals</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">doc_id</span> <span class="ow">in</span> <span class="n">lst_nearby_rentals</span><span class="p">[</span><span class="n">dist_key</span><span class="p">]:</span>
+            <span class="n">fuzz_score</span> <span class="o">=</span> <span class="n">_fuzzy_match</span><span class="p">(</span>
+                <span class="n">query_str</span><span class="p">,</span> <span class="n">dbconn</span><span class="o">.</span><span class="n">get_data_row_by_id</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">fuzz_score</span> <span class="o">&gt;</span> <span class="mi">60</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">fuzz_score</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fuzz_scores</span><span class="p">:</span>
+                    <span class="n">fuzz_scores</span><span class="p">[</span><span class="n">fuzz_score</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">fuzz_scores</span><span class="p">[</span><span class="n">fuzz_score</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">doc_id</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>If working with a large set of keys, probably not the best idea to
+sort the keys here and return.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">return</span> <span class="n">fuzz_scores</span><span class="p">,</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">fuzz_scores</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <p>TODO: implement function.
+Could use the query to determine certain landmarks and find a location
+nearby it.  Could find rentals between the search location and the
+landmark.  Search could still be constrained by distance.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_nearby_landmarks</span><span class="p">(</span><span class="n">query_str</span><span class="p">,</span> <span class="n">coordinates</span><span class="p">,</span> <span class="n">distance</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">pass</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      <h4>Input:</h4>
+<ul>
+<li>Data dictionary from Flask request</li>
+</ul>
+<h4>Output:</h4>
+<ul>
+<li>List of rentals, ordered by relevance to query than distance.<ul>
+<li>Includes the data row information to the rental as well.</li>
+</ul>
+</li>
+</ul>
+<h4>Ideas:</h4>
+<p>Search optimization: maybe search only 100m (maybe a percentage range?)
+around the target then do another search for locations 100m-1000m. Could
+create an interable object to fetch chunks.  No point in fetch all
+locations at once if user can&rsquo;t digest all the information at once.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_find_nearby_helper</span><span class="p">(</span><span class="n">data</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">lst_nearby_rentals</span><span class="p">,</span> <span class="n">nearby_keys_sorted</span> <span class="o">=</span> <span class="n">_find_rentals_nearby</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;latitude&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;longitude&#39;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;distance&#39;</span><span class="p">])</span>
+
+    <span class="n">lst_relevence_scores</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">relv_keys_sorted</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="s2">&quot;query&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      <p>Sort the search based on query relevance
+Will sort by relevance score. (closest to 100)
+Cap match at 60%, if anything lower, don&rsquo;t include.
+Don&rsquo;t need to pass in sorted range, since it is already close by</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">lst_relevence_scores</span><span class="p">,</span> <span class="n">relv_keys_sorted</span> <span class="o">=</span> <span class="n">_fuzzy_search_query</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">],</span> <span class="n">lst_nearby_rentals</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      <p>TODO: Lots of other data we can filter by, but will focus on getting
+it up and running.  Reduce the list by the filters passed in.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">lst_filtered_ids</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="s2">&quot;filter&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">pass</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-23'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-23'>#</a>
+      </div>
+      <p>Build the return list based on the parameters above.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">search_info</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">doc_id_list</span> <span class="o">=</span> <span class="p">[]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-24'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-24'>#</a>
+      </div>
+      <p>How do we balance relevance and distance?
+For now will just prioritize relevance over distance.
+Only process it if we have the data for it.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">lst_relevence_scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">r_key</span> <span class="ow">in</span> <span class="n">relv_keys_sorted</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">d_id</span> <span class="ow">in</span> <span class="n">lst_relevence_scores</span><span class="p">[</span><span class="n">r_key</span><span class="p">]:</span>
+                <span class="n">search_info</span><span class="p">[</span><span class="n">d_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;rental_id&quot;</span><span class="p">:</span> <span class="n">d_id</span><span class="p">,</span>
+                    <span class="s2">&quot;relevance&quot;</span><span class="p">:</span> <span class="n">r_key</span>
+                <span class="p">}</span>
+                <span class="n">doc_id_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d_id</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-25'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-25'>#</a>
+      </div>
+      <p>Same as above, only process if we have the data.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">if</span> <span class="n">lst_filtered_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">pass</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-26'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-26'>#</a>
+      </div>
+      <p>Always process the nearby locations list.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">for</span> <span class="n">n_key</span> <span class="ow">in</span> <span class="n">nearby_keys_sorted</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">d_id</span> <span class="ow">in</span> <span class="n">lst_nearby_rentals</span><span class="p">[</span><span class="n">n_key</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">d_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">search_info</span><span class="p">:</span>
+                <span class="n">search_info</span><span class="p">[</span><span class="n">d_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;rental_id&quot;</span><span class="p">:</span> <span class="n">d_id</span><span class="p">,</span>
+                    <span class="s2">&quot;distance&quot;</span><span class="p">:</span> <span class="n">n_key</span>
+                <span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">search_info</span><span class="p">[</span><span class="n">d_id</span><span class="p">][</span><span class="s2">&quot;distance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_key</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-27'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-27'>#</a>
+      </div>
+      <p>There will be duplicates, but we&rsquo;ll take care of that.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="n">doc_id_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d_id</span><span class="p">)</span>
+
+    <span class="n">rebuild_search_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">d_id</span> <span class="ow">in</span> <span class="n">doc_id_list</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-28'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-28'>#</a>
+      </div>
+      <p>Lookup should be instant since it is just looking for existence.
+Since we are popping the keys out, there will be no duplicates
+in the results.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="n">d_id</span> <span class="ow">in</span> <span class="n">search_info</span><span class="p">:</span>
+            <span class="n">popped_data</span> <span class="o">=</span> <span class="n">search_info</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">d_id</span><span class="p">)</span>
+            <span class="n">rebuild_search_list</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">&quot;searchinfo&quot;</span><span class="p">:</span> <span class="n">popped_data</span><span class="p">,</span>
+                <span class="s2">&quot;rentalinfo&quot;</span><span class="p">:</span> <span class="n">dbconn</span><span class="o">.</span><span class="n">get_data_row_by_id</span><span class="p">(</span><span class="n">d_id</span><span class="p">)</span>
+            <span class="p">})</span>
+
+    <span class="k">return</span> <span class="n">rebuild_search_list</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-29'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-29'>#</a>
+      </div>
+      <p>FLASK API Routes</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@application.route</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">index</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Rental Serach API.&#39;</span><span class="p">)</span>
+
+
+<span class="nd">@application.route</span><span class="p">(</span><span class="s1">&#39;/findnearby&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">find_nearby</span><span class="p">():</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get_json</span><span class="p">(</span><span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-30'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-30'>#</a>
+      </div>
+      <p>Have a list of required fields and return error if not met.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">lst_reqfields</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;latitude&quot;</span><span class="p">,</span> <span class="s2">&quot;longitude&quot;</span><span class="p">,</span> <span class="s2">&quot;distance&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">_check_request_fields</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">lst_reqfields</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span>
+            <span class="n">status</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Missing required search fields.&#39;</span><span class="p">),</span> <span class="mi">400</span>
+
+    <span class="n">rebuild_search_list</span> <span class="o">=</span> <span class="n">_find_nearby_helper</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">rebuild_search_list</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-31'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-31'>#</a>
+      </div>
+      <p>TODO: return an error status if no results.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-32'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-32'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@application.route</span><span class="p">(</span><span class="s1">&#39;/addrental&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;PUT&#39;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">add_rental</span><span class="p">():</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-33'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-33'>#</a>
+      </div>
+      <p>Added a route to add rentals.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get_json</span><span class="p">(</span><span class="n">force</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">write_success</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="n">dbconn</span><span class="o">.</span><span class="n">write_data_row</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">dbconn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">write_success</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">),</span> <span class="mi">400</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>

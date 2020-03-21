@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>data_connection.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>data_connection.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p>Created a data connection object to make it easier to reimplement without
+affecting the main api app code.</p>
+<p>Originally started to implement a mongodb connector out of curiousity but
+spent more time debugging the connection and decided to do a simulated
+data implementation instead.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">class</span> <span class="nc">dataconn</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">csv_file</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">json_quickload</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>Let us simulate persistence</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">DATASET</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">persistent_path</span> <span class="o">=</span> <span class="s2">&quot;data_fulldump.json&quot;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">persistent_path</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DATASET</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">persistent_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>TODO: Implement a way to digest errors,
+currently just a placeholder to store the data.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="bp">self</span><span class="o">.</span><span class="n">error_list</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">csv_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_csv_parse</span><span class="p">(</span><span class="n">csv_file</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <h4>Input:</h4>
+<ul>
+<li>Dictionary data row</li>
+</ul>
+<h4>Desc:</h4>
+<p>To depict writing data into a database.
+If the id exists, what should we do? Update or return collision error?
+Went ahead with collision error.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">write_data_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dict_rowdata</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="n">dict_rowdata</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">DATASET</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error_list</span><span class="p">[</span><span class="n">dict_rowdata</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">dict_rowdata</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">error_list</span><span class="p">[</span><span class="n">dict_rowdata</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]][</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;doc_id collision&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">DATASET</span><span class="p">[</span><span class="n">dict_rowdata</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">dict_rowdata</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <p>TODO: Implement proper data verification to reduce junk data.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">if</span> <span class="s2">&quot;id&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dict_rowdata</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span><span class="p">,</span> <span class="s2">&quot;Missing Fields&quot;</span>
+        <span class="k">return</span> <span class="bp">True</span><span class="p">,</span> <span class="n">dict_rowdata</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">commit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <p>Primitive approach, but just write new to file to &ldquo;save&rdquo;</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DATASET</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;data_fulldump.json&quot;</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>TODO: Implement a real iterator instead of creating a new data struct</p>
+<h4>Output:</h4>
+<ul>
+<li>Should return an iterator, so it can just go through all the rows.</li>
+</ul>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_data_row_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">list_alldata</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">row_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">DATASET</span><span class="p">:</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DATASET</span><span class="p">[</span><span class="n">row_id</span><span class="p">]</span>
+            <span class="n">list_alldata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">list_alldata</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">get_data_row_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      <p>If we need to search a real DB by document ID, do it here.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">DATASET</span><span class="p">[</span><span class="nb">id</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <h4>Input:</h4>
+<ul>
+<li>The string we will parse</li>
+<li>Length of fields</li>
+</ul>
+<h4>Output:</h4>
+<ul>
+<li>List of values</li>
+</ul>
+<h4>Description:</h4>
+<p>Since the description of the location has commas. Will throw off a
+normal split(&ldquo;,&rdquo;). Using standard lib csv to parse will fail because
+description includes new lines. (I might be doing something wrong here)
+So had to build manual line parser. by reading the lines one by one.</p>
+<p>Should be a better way to determine if name string is complete.
+What we know, a string with special char are wrapped in double quotes.
+Could determine position of double quotes.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">_get_data_from_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">str_line</span><span class="p">,</span> <span class="n">len_fieldnames</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>Name can throw off the split function. So grab the first element and
+iterate backwards.  Assume whatever is left as the Name as rejoin.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">lst_dataline</span> <span class="o">=</span> <span class="n">str_line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="n">data_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">data_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lst_dataline</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">int_num_of_cols_look</span> <span class="o">=</span> <span class="n">len_fieldnames</span> <span class="o">-</span> <span class="mi">1</span>
+
+        <span class="n">list_data_hold</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">int_num_of_cols_look</span><span class="p">):</span>
+            <span class="n">list_data_hold</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lst_dataline</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <p>Whatever is left should be the &ldquo;name&rdquo;.
+TODO: better optimization, this is just quick and dirty.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">list_data_hold</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lst_dataline</span><span class="p">))</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>Because we were working backwards, we need to reverse the list.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">data_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">list_data_hold</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">data_list</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      <h4>Input:</h4>
+<ul>
+<li>CSV file path</li>
+</ul>
+<h4>Desc:</h4>
+<p>Just parse the CSV file line by line and write to the simulated
+DATASET variable in the object.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">_csv_parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">csv_file_path</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">fileread_csv</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">csv_file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">header_row</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">expected_commas</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">len_col</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">build_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">data_line</span> <span class="ow">in</span> <span class="n">fileread_csv</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      <p>Assume the first row is the header row. will get col&rsquo;s names</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">if</span> <span class="n">header_row</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">header_row</span> <span class="o">=</span> <span class="n">data_line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+                <span class="n">len_col</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">header_row</span><span class="p">)</span>
+                <span class="n">expected_commas</span> <span class="o">=</span> <span class="n">len_col</span> <span class="o">-</span> <span class="mi">1</span>
+
+            <span class="k">else</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      <p>Make an assumption data lines can span multiple lines</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                <span class="n">build_string</span> <span class="o">+=</span> <span class="n">data_line</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-23'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-23'>#</a>
+      </div>
+      <p>If we are short on expected commas, then the request will
+fail due to not enough info.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                <span class="k">if</span> <span class="n">build_string</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">expected_commas</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-24'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-24'>#</a>
+      </div>
+      <p>Will pass if we have enough column values to work with.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                    <span class="n">lst_rowdata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_data_from_line</span><span class="p">(</span>
+                        <span class="n">build_string</span><span class="p">,</span> <span class="n">expected_commas</span><span class="p">)</span>
+
+                    <span class="n">dict_rowdata</span> <span class="o">=</span> <span class="p">{}</span>
+                    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">len_col</span><span class="p">):</span>
+                        <span class="n">dict_rowdata</span><span class="p">[</span><span class="n">header_row</span><span class="p">[</span><span class="n">x</span><span class="p">]]</span> <span class="o">=</span> <span class="n">lst_rowdata</span><span class="p">[</span><span class="n">x</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-25'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-25'>#</a>
+      </div>
+      <p>Try to convert to lat and long, required fields.
+If they fail, then save error row and we can use that
+to send an error message.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">dict_rowdata</span><span class="p">[</span><span class="s1">&#39;latitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                            <span class="n">dict_rowdata</span><span class="p">[</span><span class="s1">&#39;latitude&#39;</span><span class="p">])</span>
+                        <span class="n">dict_rowdata</span><span class="p">[</span><span class="s1">&#39;longitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                            <span class="n">dict_rowdata</span><span class="p">[</span><span class="s1">&#39;longitude&#39;</span><span class="p">])</span>
+
+                        <span class="bp">self</span><span class="o">.</span><span class="n">write_data_row</span><span class="p">(</span><span class="n">dict_rowdata</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">error_list</span><span class="p">[</span><span class="n">dict_rowdata</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">dict_rowdata</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">error_list</span><span class="p">[</span><span class="n">dict_rowdata</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]][</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                            <span class="s2">&quot;lat long float conv error&quot;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-26'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-26'>#</a>
+      </div>
+      <p>Assuming we have to build each string before processing,
+so reinitialize it as empty.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                    <span class="n">build_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-27'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-27'>#</a>
+      </div>
+      <p>E.G.: python3 data_connection.py AB_NYC_2019.csv</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">data_file</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">dbc</span> <span class="o">=</span> <span class="n">dataconn</span><span class="p">(</span><span class="n">csv_file</span><span class="o">=</span><span class="n">data_file</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-28'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-28'>#</a>
+      </div>
+      <p>Dump it into json for quick loading using the json.load()</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">dbc</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>
