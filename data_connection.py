@@ -46,6 +46,11 @@ class dataconn(object):
         else:
             self.DATASET[dict_rowdata["id"]] = dict_rowdata
 
+        # TODO: Implement proper data verification to reduce junk data.
+        if "id" not in dict_rowdata:
+            return False, "Missing Fields"
+        return True, dict_rowdata["id"]
+
     def commit(self):
         # Primitive approach, but just write new to file to "save"
         json.dump(self.DATASET, open("data_fulldump.json", "w+"))

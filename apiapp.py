@@ -303,3 +303,16 @@ def find_nearby():
     rebuild_search_list = _find_nearby_helper(data)
     return jsonify(status=True, data=rebuild_search_list)
     # TODO: return an error status if no results.
+
+
+@application.route('/addrental', methods=['PUT'])
+def add_rental():
+    # Added a route to add rentals.
+
+    data = request.get_json(force=True)
+    write_success, message = dbconn.write_data_row(data)
+
+    if write_success:
+        return jsonify(status=True, data=message)
+    else:
+        return jsonify(status=False, message=message), 400
