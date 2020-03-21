@@ -1,9 +1,16 @@
 import json
+import sys
 
+
+# Created a dataconn object here.
+#   make it easier to reimplement without affecting the main api app code.
+
+# Originally wanted to implement a mongodb connector out of curiousity.
+#   But was running out of time so I just did a quick implementation
+#   of a csv to dict.
+
+# # TODO: impl mongo db connector.
 # from pymongo import MongoClient
-
-
-# # TODO: flesh this out for usage.
 # def load_mongo(dict_rowdata):
 
 #     username = "mongoroot"
@@ -14,6 +21,8 @@ import json
 
 #     r_id = mdb_rental.insert_one(dict_rowdata).inserted_id
 #     return r_id
+
+
 class dataconn(object):
 
     def __init__(self, csv_file=None, json_quickload=None):
@@ -28,7 +37,7 @@ class dataconn(object):
             self._csv_parse(csv_file)
 
     def write_data_row(self, data_row):
-        pass
+        self.DATASET[data_row["id"]] = data_row
 
     def get_data_row_iter(self):
         list_alldata = []
@@ -98,7 +107,7 @@ class dataconn(object):
                     continue
                 else:
                     # will pass if we have enough column values to work with.
-                    lst_rowdata = self.get_data_from_line(
+                    lst_rowdata = self._get_data_from_line(
                         build_string, expected_commas)
 
                     dict_rowdata = {}
@@ -114,8 +123,8 @@ class dataconn(object):
                         dict_rowdata['longitude'] = float(
                             dict_rowdata['longitude'])
 
-                        self.DATASET[dict_rowdata["id"]] = dict_rowdata
-                    except TypeError:
+                        self.write_data_row(dict_rowdata)
+                    except ValueError:
                         self.error_list[dict_rowdata["id"]] = dict_rowdata
 
                     build_string = ""
@@ -123,8 +132,10 @@ class dataconn(object):
 
 if __name__ == "__main__":
 
-    data_file = "AB_NYC_2019.csv"
+    # data_file = "AB_NYC_2019.csv"
+    data_file = sys.argv[1]
     dbc = dataconn(csv_file=data_file)
 
-    # primitive approach, but process the data once and just dump it all into.
+    # primitive approach, but process the data once.
+    #   Then dump it into json for quick loading using json lib.
     json.dump(dbc.DATASET, open("data_fulldump.json", "w+"))
