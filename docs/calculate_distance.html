@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>calculate_distance.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>calculate_distance.py</h1></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <ul>
+<li>Earth radius is defined in meters, thus all results will be in meters.</li>
+<li>Found </li>
+</ul>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">math</span>
+
+<span class="n">EARTHRADIUS</span> <span class="o">=</span> <span class="mi">6371000</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <h4>Input:</h4>
+<ul>
+<li>Start Coordinate pairs [Latitude, Longitude]</li>
+<li>End Coordinate pairs [Latitude, Longitude]</li>
+</ul>
+<h4>Output:</h4>
+<ul>
+<li>Distance in meters</li>
+</ul>
+<h4>Desc:</h4>
+<p><a href="https://stackoverflow.com/questions/837872/calculate-distance-in-meters-when-you-know-longitude-and-latitude-in-java">Found the equation in the link below. Ported from Java to Python.</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">calc_latlong_distance</span><span class="p">(</span><span class="n">coordinates1</span><span class="p">,</span> <span class="n">coordinates2</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">lat1</span> <span class="o">=</span> <span class="n">coordinates1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">lng1</span> <span class="o">=</span> <span class="n">coordinates1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">lat2</span> <span class="o">=</span> <span class="n">coordinates2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">lng2</span> <span class="o">=</span> <span class="n">coordinates2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">dLat</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lat2</span> <span class="o">-</span> <span class="n">lat1</span><span class="p">)</span>
+    <span class="n">dLng</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lng2</span> <span class="o">-</span> <span class="n">lng1</span><span class="p">)</span>
+    <span class="n">area</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dLat</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dLat</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span>
+        <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lat1</span><span class="p">))</span> <span class="o">*</span>
+        <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">lat2</span><span class="p">))</span> <span class="o">*</span>
+        <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dLng</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dLng</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">circumf</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">atan2</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">area</span><span class="p">),</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">area</span><span class="p">))</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">EARTHRADIUS</span> <span class="o">*</span> <span class="n">circumf</span>
+
+    <span class="k">return</span> <span class="n">distance</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>Definately spent way too much time on trying to work the equation backwards.
+Decided to just look up a solution and work it into the project.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">_findCoor_by_distAndBearing</span><span class="p">(</span><span class="n">anchor_lat</span><span class="p">,</span> <span class="n">anchor_long</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">degree_idx</span><span class="p">):</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <h4>Input:</h4>
+<ul>
+<li>Starting Latitude Coordinate</li>
+<li>Starting Longitude Coordinate</li>
+<li>Distance in meters</li>
+<li>Degree Index (degrees of a circle)</li>
+</ul>
+<h4>Output:</h4>
+<ul>
+<li>[Latitude, Longitude] of end point. </li>
+</ul>
+<h4>Desc:</h4>
+<p><a href="https://stackoverflow.com/questions/7222382/get-lat-long-given-current-point-distance-and-bearing">Found the equation on StackOverflow</a></p>
+<p>Was relearning how spherical circumference calculations worked, spent way
+too much time (a few hours) trying to find missing variables using
+the function above. Decided to search for an implementation instead.</p>
+<p>Degrees bearing used to determine the midpoints of all sides of a square.
+This helps set the initial search zone for nearby rentals.
+If we implement an octagon, should be a small zone to search. Would do it
+here.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">degree_bearing</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="mi">0</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="mi">90</span><span class="p">:</span> <span class="mf">1.57</span><span class="p">,</span>
+        <span class="mi">180</span><span class="p">:</span> <span class="mf">3.14</span><span class="p">,</span>
+        <span class="mi">240</span><span class="p">:</span> <span class="mf">4.18</span>
+    <span class="p">}</span>
+    <span class="n">bearing</span> <span class="o">=</span> <span class="n">degree_bearing</span><span class="p">[</span><span class="n">degree_idx</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p>convert to radians</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">radians_lat</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">anchor_lat</span><span class="p">)</span>
+    <span class="n">radians_long</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">anchor_long</span><span class="p">)</span>
+
+    <span class="n">dist_div_earthrad</span> <span class="o">=</span> <span class="n">distance</span> <span class="o">/</span> <span class="n">EARTHRADIUS</span>
+
+    <span class="n">result_lat</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">math</span><span class="o">.</span><span class="n">asin</span><span class="p">(</span>
+            <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">radians_lat</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">dist_div_earthrad</span><span class="p">)</span> <span class="o">+</span>
+            <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">radians_lat</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dist_div_earthrad</span><span class="p">)</span> <span class="o">*</span>
+            <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">bearing</span><span class="p">)))</span>
+
+    <span class="n">result_long</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">radians_long</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">atan2</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">bearing</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">dist_div_earthrad</span><span class="p">)</span> <span class="o">*</span>
+             <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">radians_lat</span><span class="p">)),</span>
+            <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">dist_div_earthrad</span><span class="p">)</span> <span class="o">-</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">radians_lat</span><span class="p">)</span> <span class="o">*</span>
+             <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">result_lat</span><span class="p">))</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">result_lat</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">result_lat</span><span class="p">)</span>
+    <span class="n">result_long</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">result_long</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result_lat</span><span class="p">,</span> <span class="n">result_long</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <p>Hardcoded functions to search for endpoint. to calculate the search range.</p>
+<p>Bearings denote certain results:</p>
+<ul>
+<li>0 as max latitude</li>
+<li>90 as max longitude</li>
+<li>180 as min latitude</li>
+<li>240 as min longitude</li>
+</ul>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">find_max_latitude</span><span class="p">(</span><span class="n">anchor_lat</span><span class="p">,</span> <span class="n">anchor_long</span><span class="p">,</span> <span class="n">distance</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_findCoor_by_distAndBearing</span><span class="p">(</span>
+        <span class="n">anchor_lat</span><span class="p">,</span> <span class="n">anchor_long</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="p">)[</span><span class="mi">0</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">find_max_longitude</span><span class="p">(</span><span class="n">anchor_lat</span><span class="p">,</span> <span class="n">anchor_long</span><span class="p">,</span> <span class="n">distance</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_findCoor_by_distAndBearing</span><span class="p">(</span>
+        <span class="n">anchor_lat</span><span class="p">,</span> <span class="n">anchor_long</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="mi">90</span>
+    <span class="p">)[</span><span class="mi">1</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">find_min_latitude</span><span class="p">(</span><span class="n">anchor_lat</span><span class="p">,</span> <span class="n">anchor_long</span><span class="p">,</span> <span class="n">distance</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_findCoor_by_distAndBearing</span><span class="p">(</span>
+        <span class="n">anchor_lat</span><span class="p">,</span> <span class="n">anchor_long</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="mi">180</span>
+    <span class="p">)[</span><span class="mi">0</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">find_min_longitude</span><span class="p">(</span><span class="n">anchor_lat</span><span class="p">,</span> <span class="n">anchor_long</span><span class="p">,</span> <span class="n">distance</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">_findCoor_by_distAndBearing</span><span class="p">(</span>
+        <span class="n">anchor_lat</span><span class="p">,</span> <span class="n">anchor_long</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="mi">240</span>
+    <span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>
