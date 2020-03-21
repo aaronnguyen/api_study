@@ -38,6 +38,7 @@ Main focus:
   - Flask is also a werkzeug wrapper.
 - Please see docs/*.html for my other thoughts during development.
 
+
 ## Example queries:
 
 ```BASH
@@ -66,6 +67,12 @@ curl -i -H "Content-Type: application/json" -X PUT -d '{"id": 938472938728, "hel
 [StackOverflow: Given Start Coordinate, Bearing, and Distance, Find End Coordinate](https://stackoverflow.com/questions/7222382/get-lat-long-given-current-point-distance-and-bearing)
 
 [Documentation Generator: Pycco](https://pycco-docs.github.io/pycco/)
+
+## TODOs
+
+- Docker-compose for easier deployment
+- MongoDB for better scalability
+- Unit tests for better quality
 
 ## Requirements
 
