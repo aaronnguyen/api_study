@@ -311,6 +311,7 @@ def add_rental():
 
     data = request.get_json(force=True)
     write_success, message = dbconn.write_data_row(data)
+    dbconn.commit()
 
     if write_success:
         return jsonify(status=True, data=message)
