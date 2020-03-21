@@ -1,14 +1,26 @@
+"""
+- Earth radius is defined in meters, thus all results will be in meters.
+- Found 
+"""
 import math
 
-
-# Radius of the Earth in meters
 EARTHRADIUS = 6371000
 
 
-# https://stackoverflow.com/questions/837872/calculate-distance-in-meters-when-you-know-longitude-and-latitude-in-java
-# Found a function in java and ported it to Python.
 def calc_latlong_distance(coordinates1, coordinates2):
+    """
+    #### Input:
+    - Start Coordinate pairs [Latitude, Longitude]
+    - End Coordinate pairs [Latitude, Longitude]
 
+    #### Output:
+    - Distance in meters
+
+    #### Desc:
+    [Found the equation in the link below. Ported from Java to Python.](https://stackoverflow.com/questions/837872/calculate-distance-in-meters-when-you-know-longitude-and-latitude-in-java)
+    
+
+    """
     lat1 = coordinates1[0]
     lng1 = coordinates1[1]
     lat2 = coordinates2[0]
@@ -28,10 +40,31 @@ def calc_latlong_distance(coordinates1, coordinates2):
     return distance
 
 
-# https://stackoverflow.com/questions/7222382/get-lat-long-given-current-point-distance-and-bearing
 # Definately spent way too much time on trying to work the equation backwards.
 # Decided to just look up a solution and work it into the project.
 def _findCoor_by_distAndBearing(anchor_lat, anchor_long, distance, degree_idx):
+    """
+    #### Input:
+    - Starting Latitude Coordinate
+    - Starting Longitude Coordinate
+    - Distance in meters
+    - Degree Index (degrees of a circle)
+
+    #### Output:
+    - [Latitude, Longitude] of end point. 
+
+    #### Desc:
+    [Found the equation on StackOverflow](https://stackoverflow.com/questions/7222382/get-lat-long-given-current-point-distance-and-bearing)
+
+    Was relearning how spherical circumference calculations worked, spent way
+    too much time (a few hours) trying to find missing variables using
+    the function above. Decided to search for an implementation instead.
+
+    Degrees bearing used to determine the midpoints of all sides of a square.
+    This helps set the initial search zone for nearby rentals.
+    If we implement an octagon, should be a small zone to search. Would do it
+    here.
+    """
     degree_bearing = {
         0: 0,
         90: 1.57,
@@ -66,12 +99,18 @@ def _findCoor_by_distAndBearing(anchor_lat, anchor_long, distance, degree_idx):
     return result_lat, result_long
 
 
-# NOTE: Bearing in degrees. Use the above function to create
-#       a square search zone.
-# 0 = max lat
-# 90 = max long
-# 180 = min lat
-# 240 = min long
+"""
+Hardcoded functions to search for endpoint. to calculate the search range.
+
+Bearings denote certain results:
+
+- 0 as max latitude
+- 90 as max longitude
+- 180 as min latitude
+- 240 as min longitude
+"""
+
+
 def find_max_latitude(anchor_lat, anchor_long, distance):
     return _findCoor_by_distAndBearing(
         anchor_lat, anchor_long, distance, 0

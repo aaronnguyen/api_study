@@ -1,45 +1,63 @@
+"""
+Created a data connection object to make it easier to reimplement without
+affecting the main api app code.
+
+Originally started to implement a mongodb connector out of curiousity but
+spent more time debugging the connection and decided to do a simulated
+data implementation instead.
+"""
 import json
 import sys
-
-
-# Created a dataconn object here.
-#   make it easier to reimplement without affecting the main api app code.
-
-# Originally wanted to implement a mongodb connector out of curiousity.
-#   But was running out of time so I just did a quick implementation
-#   of a csv to dict.
-
-# # TODO: impl mongo db connector.
-# from pymongo import MongoClient
-# def load_mongo(dict_rowdata):
-
-#     username = "mongoroot"
-#     password = "mongorootpassword"
-#     client = MongoClient('mongodb://%s:%s@localhost:27017/%s' % (
-#         username, password, 'rentalproperties'))
-#     mdb_rental = client.db.rentalproperties
-
-#     r_id = mdb_rental.insert_one(dict_rowdata).inserted_id
-#     return r_id
+import os
 
 
 class dataconn(object):
 
     def __init__(self, csv_file=None, json_quickload=None):
 
+        # Let us simulate persistence
         self.DATASET = {}
+        persistent_path = "data_fulldump.json"
+        if os.path.exists(persistent_path):
+            self.DATASET = json.load(open(persistent_path, "r"))
+
+        # TODO: Implement a way to digest errors,
+        # currently just a placeholder to store the data.
         self.error_list = {}
 
-        # take json as priority since it is quicker
-        if json_quickload is not None:
-            self.DATASET = json.load(open(json_quickload, "r"))
-        elif csv_file is not None:
+        if csv_file is not None:
             self._csv_parse(csv_file)
 
-    def write_data_row(self, data_row):
-        self.DATASET[data_row["id"]] = data_row
+    def write_data_row(self, dict_rowdata):
+        """
+        #### Input:
+
+        - Dictionary data row
+
+        #### Desc:
+
+        To depict writing data into a database.
+        If the id exists, what should we do? Update or return collision error?
+        Went ahead with collision error.
+        """
+        if dict_rowdata["id"] in self.DATASET:
+            self.error_list[dict_rowdata["id"]] = dict_rowdata
+            self.error_list[dict_rowdata["id"]]["error"] = "doc_id collision"
+        else:
+            self.DATASET[dict_rowdata["id"]] = dict_rowdata
+
+    def commit(self):
+        # Primitive approach, but just write new to file to "save"
+        json.dump(self.DATASET, open("data_fulldump.json", "w+"))
 
     def get_data_row_iter(self):
+        """
+        TODO: Implement a real iterator instead of creating a new data struct
+
+        #### Output:
+        
+        - Should return an iterator, so it can just go through all the rows.
+        """
         list_alldata = []
         for row_id in self.DATASET:
             row = self.DATASET[row_id]
@@ -47,18 +65,34 @@ class dataconn(object):
         return list_alldata
 
     def get_data_row_by_id(self, id):
+        # If we need to search a real DB by document ID, do it here.
         return self.DATASET[id]
 
-    # since the description of the location has commas.
-    # will throw off a normal split(",")
-    # so using standard lib csv to parse
-    # update1: tried csv and found a null char.
-    #   will return back to original attempt.
     def _get_data_from_line(self, str_line, len_fieldnames):
+        """
+        #### Input:
 
-        # Based on given structure, description can throw off read
-        #   so will grab the first elem, and the last few elem.
-        #   Then assume whatever is left is the desc and rejoin it all
+        - The string we will parse
+        - Length of fields
+
+        #### Output:
+
+        - List of values
+
+        #### Description:
+
+        Since the description of the location has commas. Will throw off a
+        normal split(","). Using standard lib csv to parse will fail because
+        description includes new lines. (I might be doing something wrong here)
+        So had to build manual line parser. by reading the lines one by one.
+
+        Should be a better way to determine if name string is complete.
+        What we know, a string with special char are wrapped in double quotes.
+        Could determine position of double quotes.
+        """
+
+        # Name can throw off the split function. So grab the first element and
+        # iterate backwards.  Assume whatever is left as the Name as rejoin.
         lst_dataline = str_line.rstrip().split(",")
         data_list = []
         data_list.append(lst_dataline.pop(0))
@@ -68,11 +102,7 @@ class dataconn(object):
         for x in range(int_num_of_cols_look):
             list_data_hold.append(lst_dataline.pop(-1))
 
-        # Whatever is left should be the description.
-        #   should be a better way to determine if name string is complete.
-        # What we know, a string with special chars
-        #   are wrapped in double quotes.
-        # could determine position of double quotes.
+        # Whatever is left should be the "name".
         # TODO: better optimization, this is just quick and dirty.
         list_data_hold.append(",".join(lst_dataline))
 
@@ -82,6 +112,16 @@ class dataconn(object):
         return data_list
 
     def _csv_parse(self, csv_file_path):
+        """
+        #### Input:
+
+        - CSV file path
+
+        #### Desc:
+
+        Just parse the CSV file line by line and write to the simulated
+        DATASET variable in the object.
+        """
 
         fileread_csv = open(csv_file_path, "r", newline='')
         header_row = None
@@ -91,22 +131,22 @@ class dataconn(object):
         build_string = ""
         for data_line in fileread_csv:
 
-            # assume the first row is the header row. will get col's names
+            # Assume the first row is the header row. will get col's names
             if header_row is None:
                 header_row = data_line.rstrip().split(",")
                 len_col = len(header_row)
                 expected_commas = len_col - 1
 
             else:
-                # make an assumption data lines can span multiple lines
+                # Make an assumption data lines can span multiple lines
                 build_string += data_line
 
-                # if we are short on expected commas, then the request will
-                #   fail due to not enough info.
+                # If we are short on expected commas, then the request will
+                # fail due to not enough info.
                 if build_string.count(",") < expected_commas:
                     continue
                 else:
-                    # will pass if we have enough column values to work with.
+                    # Will pass if we have enough column values to work with.
                     lst_rowdata = self._get_data_from_line(
                         build_string, expected_commas)
 
@@ -114,9 +154,9 @@ class dataconn(object):
                     for x in range(0, len_col):
                         dict_rowdata[header_row[x]] = lst_rowdata[x]
 
-                    # try to convert to lat and long, required fields.
-                    # if they fail, then save error row and we cna use that
-                    #   to report back to submitter or to server.
+                    # Try to convert to lat and long, required fields.
+                    # If they fail, then save error row and we can use that
+                    # to send an error message.
                     try:
                         dict_rowdata['latitude'] = float(
                             dict_rowdata['latitude'])
@@ -126,16 +166,19 @@ class dataconn(object):
                         self.write_data_row(dict_rowdata)
                     except ValueError:
                         self.error_list[dict_rowdata["id"]] = dict_rowdata
+                        self.error_list[dict_rowdata["id"]]["error"] = (
+                            "lat long float conv error")
 
+                    # Assuming we have to build each string before processing,
+                    # so reinitialize it as empty.
                     build_string = ""
 
 
 if __name__ == "__main__":
 
-    # data_file = "AB_NYC_2019.csv"
+    # E.G.: python3 data_connection.py AB_NYC_2019.csv
     data_file = sys.argv[1]
     dbc = dataconn(csv_file=data_file)
 
-    # primitive approach, but process the data once.
-    #   Then dump it into json for quick loading using json lib.
-    json.dump(dbc.DATASET, open("data_fulldump.json", "w+"))
+    # Dump it into json for quick loading using the json.load()
+    dbc.commit()
