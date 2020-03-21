@@ -14,11 +14,10 @@ from fuzzywuzzy import fuzz
 from calculate_distance import (calc_latlong_distance, find_max_latitude,
                                 find_max_longitude, find_min_latitude,
                                 find_min_longitude)
+from data_connection import dataconn
 
 application = Flask(__name__)
-
-# Development
-DATASET = json.load(open("data_fulldump.json", "r"))
+dbconn = dataconn(json_quickload="data_fulldump.json")
 
 
 def _find_rentals_nearby(latitude, longitude, dist_range):
