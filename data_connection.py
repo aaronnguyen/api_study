@@ -55,7 +55,7 @@ class dataconn(object):
         TODO: Implement a real iterator instead of creating a new data struct
 
         #### Output:
-        
+
         - Should return an iterator, so it can just go through all the rows.
         """
         list_alldata = []

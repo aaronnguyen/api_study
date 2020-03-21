@@ -373,7 +373,10 @@ landmark.  Search could still be constrained by distance.</p>
 </ul>
 <h4>Output:</h4>
 <ul>
-<li>List of rentals, ordered by relevance to query than distance.</li>
+<li>List of rentals, ordered by relevance to query than distance.<ul>
+<li>Includes the data row information to the rental as well.</li>
+</ul>
+</li>
 </ul>
 <h4>Ideas:</h4>
 <p>Search optimization: maybe search only 100m (maybe a percentage range?)
@@ -528,7 +531,10 @@ in the results.</p>
     <div class='code'>
       <div class="highlight"><pre>        <span class="k">if</span> <span class="n">d_id</span> <span class="ow">in</span> <span class="n">search_info</span><span class="p">:</span>
             <span class="n">popped_data</span> <span class="o">=</span> <span class="n">search_info</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">d_id</span><span class="p">)</span>
-            <span class="n">rebuild_search_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">popped_data</span><span class="p">)</span>
+            <span class="n">rebuild_search_list</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">&quot;searchinfo&quot;</span><span class="p">:</span> <span class="n">popped_data</span><span class="p">,</span>
+                <span class="s2">&quot;rentalinfo&quot;</span><span class="p">:</span> <span class="n">dbconn</span><span class="o">.</span><span class="n">get_data_row_by_id</span><span class="p">(</span><span class="n">d_id</span><span class="p">)</span>
+            <span class="p">})</span>
 
     <span class="k">return</span> <span class="n">rebuild_search_list</span></pre></div>
     </div>

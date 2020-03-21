@@ -1,6 +1,5 @@
 """
-- Earth radius is defined in meters, thus all results will be in meters.
-- Found 
+Earth radius is defined in meters, thus all results will be in meters.
 """
 import math
 
@@ -18,8 +17,6 @@ def calc_latlong_distance(coordinates1, coordinates2):
 
     #### Desc:
     [Found the equation in the link below. Ported from Java to Python.](https://stackoverflow.com/questions/837872/calculate-distance-in-meters-when-you-know-longitude-and-latitude-in-java)
-    
-
     """
     lat1 = coordinates1[0]
     lng1 = coordinates1[1]
@@ -51,7 +48,7 @@ def _findCoor_by_distAndBearing(anchor_lat, anchor_long, distance, degree_idx):
     - Degree Index (degrees of a circle)
 
     #### Output:
-    - [Latitude, Longitude] of end point. 
+    - [Latitude, Longitude] of end point.
 
     #### Desc:
     [Found the equation on StackOverflow](https://stackoverflow.com/questions/7222382/get-lat-long-given-current-point-distance-and-bearing)
