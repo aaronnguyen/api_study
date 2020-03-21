@@ -155,7 +155,8 @@ def _fuzzy_search_query(query_str, lst_nearby_rentals):
     fuzz_scores = {}
     for dist_key in lst_nearby_rentals:
         for doc_id in lst_nearby_rentals[dist_key]:
-            fuzz_score = _fuzzy_match(query_str, DATASET[doc_id]["name"])
+            fuzz_score = _fuzzy_match(
+                query_str, dbconn.get_data_row_by_id(doc_id)["name"])
             if fuzz_score > 60:
                 if fuzz_score not in fuzz_scores:
                     fuzz_scores[fuzz_score] = []
