@@ -12,6 +12,8 @@ Documentation was generated using Pycco (not needed to run the API).
 3. (Optional) Load data onto the database using `python3 data_connection.py path_to_csv_file.csv`
 4. Use the "run.sh" script to start up Flask service
 5. (Optional) Run "curltest.sh" to do quick curl API calls.
+6. API should now be accessible through: http://127.0.0.1:5000/
+    - Please see examples below for routes and usage.
 
 ## Description
 
