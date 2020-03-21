@@ -5,11 +5,8 @@ Caching: when needed to scale. Some areas we can implement:
 - Add potential here
 
 """
-import json
 # import logging
-# import os
 
-# import requests
 from flask import Flask, jsonify, request
 # from flask_pymongo import PyMongo
 from fuzzywuzzy import fuzz
@@ -65,8 +62,8 @@ def _find_rentals_nearby(latitude, longitude, dist_range):
     # Should be faster then iterating through a list line by line.
     # If project is expanded,
     #   breakdown datasets into zones. counties. etc.
-    for row_id in DATASET:
-        row = DATASET[row_id]
+    # TODO: a real iterable obj here
+    for row in dbconn.get_data_row_iter():
         r_lat = float(row['latitude'])
         r_lng = float(row['longitude'])
 
@@ -124,10 +121,17 @@ def _check_request_fields(dict_datarequest, lst_requiredfields):
 #   Reduce host complexity as well.
 # https://github.com/seatgeek/fuzzywuzzy
 def _fuzzy_match(query_str, row_desc):
+    """
+    Input:
+    - 2 strings to compare
+
+    Output:
+    - An average of the result values based on all available checks.
+    """
     # use fuzzy search and find a location according to query.
 
     # Used at work before, better results using all four and averaging
-    #   out the score.
+    #   out the score. This is to compensate for human mispellings.
     f_part_r_val = fuzz.partial_ratio(query_str, row_desc)
     f_r_val = fuzz.ratio(query_str, row_desc)
     tsortr_val = fuzz.token_sort_ratio(query_str, row_desc)
@@ -138,7 +142,17 @@ def _fuzzy_match(query_str, row_desc):
 
 
 def _fuzzy_search_query(query_str, lst_nearby_rentals):
+    """
+    Input:
+    - query string to search
+    - subset of data set to look within
 
+    Output:
+    - dictionary
+        - key: fuzzy search score
+        - value: document id
+    - sorted list of the scores keys in desc order.
+    """
     fuzz_scores = {}
     for dist_key in lst_nearby_rentals:
         for doc_id in lst_nearby_rentals[dist_key]:
@@ -162,6 +176,8 @@ def _nearby_landmarks(query_str, coordinates, distance):
     pass
 
 
+# Pull this out of the main api function. wanted to be able to focus on just
+#   the api portion in the api function itself.
 def _find_nearby_helper(data):
 
     # TODO: search optimization
@@ -246,6 +262,8 @@ def index():
 @application.route('/findnearby', methods=['GET'])
 def find_nearby():
     data = request.get_json(force=True)
+
+    # Have a list of required fields and return error if not met.
     lst_reqfields = ["latitude", "longitude", "distance"]
     if _check_request_fields(data, lst_reqfields) is False:
         return jsonify(
@@ -253,3 +271,5 @@ def find_nearby():
 
     rebuild_search_list = _find_nearby_helper(data)
     return jsonify(status=True, data=rebuild_search_list)
+
+    # TODO: return an error status if no results.
